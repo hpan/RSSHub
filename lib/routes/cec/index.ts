@@ -80,8 +80,13 @@ export async function handler() {
         return {
             title: '中国电力企业联合会',
             link: 'https://www.cec.org.cn/',
-            item: [],
-            description: '无法访问中国电力企业联合会官网，请在中国大陆地区访问或使用代理。',
+            item: [
+                {
+                    title: '中国电力企业联合会新闻',
+                    link: 'https://www.cec.org.cn/',
+                    description: '无法访问中国电力企业联合会官网，请在中国大陆地区访问或使用支持访问国内网站的服务器。',
+                },
+            ],
         };
     }
     
