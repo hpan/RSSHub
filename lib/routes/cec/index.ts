@@ -72,7 +72,18 @@ async function getArticleDetail(id: string) {
 }
 
 export async function handler() {
-    const list = await getNewsList();
+    let list: { title: string; link: string; id: string; type: string }[];
+    
+    try {
+        list = await getNewsList();
+    } catch {
+        return {
+            title: '中国电力企业联合会',
+            link: 'https://www.cec.org.cn/',
+            item: [],
+            description: '无法访问中国电力企业联合会官网，请在中国大陆地区访问或使用代理。',
+        };
+    }
     
     const items = await Promise.all(
         list.slice(0, 20).map(async (item) => {
