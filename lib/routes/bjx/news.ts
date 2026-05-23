@@ -26,16 +26,27 @@ export const route: Route = {
 };
 
 async function handler() {
-    // 使用Playwright访问首页获取新闻列表
-    const { page, destroy } = await getPlaywrightPage('https://www.bjx.com.cn', {
-        gotoConfig: {
-            waitUntil: 'networkidle',
-            timeout: 30000,
-        },
-    });
+    let html: string;
+    
+    try {
+        // 使用Playwright访问首页获取新闻列表
+        const { page, destroy } = await getPlaywrightPage('https://www.bjx.com.cn', {
+            gotoConfig: {
+                waitUntil: 'networkidle',
+                timeout: 30000,
+            },
+        });
 
-    const html = await page.content();
-    await destroy();
+        html = await page.content();
+        await destroy();
+    } catch {
+        return {
+            title: '北极星电力网 - 新闻中心',
+            link: 'https://www.bjx.com.cn/',
+            item: [],
+            description: '无法访问北极星电力网，请在中国大陆地区访问或检查网络连接。',
+        };
+    }
 
     const $ = load(html);
     const items: { title: string; link: string }[] = [];
