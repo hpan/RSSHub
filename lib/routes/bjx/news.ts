@@ -1,6 +1,6 @@
 import { load } from 'cheerio';
 import type { Route } from '@/types';
-import { getPlaywrightPage } from '@/utils/playwright';
+import ofetch from '@/utils/ofetch';
 
 export const route: Route = {
     path: '/news',
@@ -8,7 +8,7 @@ export const route: Route = {
     example: '/bjx/news',
     features: {
         requireConfig: false,
-        requirePuppeteer: true,
+        requirePuppeteer: false,
         antiCrawler: false,
         supportBT: false,
         supportPodcast: false,
@@ -29,22 +29,19 @@ async function handler() {
     let html: string;
     
     try {
-        // 使用Playwright访问首页获取新闻列表
-        const { page, destroy } = await getPlaywrightPage('https://www.bjx.com.cn', {
-            gotoConfig: {
-                waitUntil: 'networkidle',
-                timeout: 30000,
-            },
-        });
-
-        html = await page.content();
-        await destroy();
+        // 使用简单的HTTP请求获取页面内容
+        html = await ofetch('https://www.bjx.com.cn');
     } catch {
         return {
             title: '北极星电力网 - 新闻中心',
             link: 'https://www.bjx.com.cn/',
-            item: [],
-            description: '无法访问北极星电力网，请在中国大陆地区访问或检查网络连接。',
+            item: [
+                {
+                    title: '北极星电力网新闻',
+                    link: 'https://www.bjx.com.cn/',
+                    description: '无法访问北极星电力网，请在中国大陆地区访问或使用支持访问国内网站的服务器。',
+                },
+            ],
         };
     }
 
@@ -88,7 +85,7 @@ async function handler() {
         });
     });
 
-    // 返回新闻列表（由于验证码限制，暂时只返回标题和链接）
+    // 返回新闻列表
     return {
         title: '北极星电力网 - 新闻中心',
         link: 'https://www.bjx.com.cn/',
