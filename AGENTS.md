@@ -125,3 +125,17 @@
 53. **Comments Language**: Write code comments in English for consistency and accessibility.
 
 54. **Parentheses in Arrow Functions**: Always use parentheses around arrow function parameters, even for single parameters.
+
+### Route Registry
+
+**CEC Route** (`lib/routes/cec/`):
+- Route: `/cec`
+- Source: https://www.cec.org.cn
+- Method: API fetch (no Puppeteer)
+- Features: Full text extraction, pubDate, author, category
+
+**BJX Route** (`lib/routes/bjx/news.ts`):
+- Route: `/bjx/news`
+- Source: https://www.bjx.com.cn
+- Method: HTTP fetch with cheerio parsing
+- Features: Full text extraction when available, fallback to title only

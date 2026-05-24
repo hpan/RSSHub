@@ -1,7 +1,6 @@
 import { load } from 'cheerio';
 import type { Route } from '@/types';
 import ofetch from '@/utils/ofetch';
-import { getPlaywrightPage } from '@/utils/playwright';
 
 export const route: Route = {
     path: '/news',
@@ -9,7 +8,7 @@ export const route: Route = {
     example: '/bjx/news',
     features: {
         requireConfig: false,
-        requirePuppeteer: true,
+        requirePuppeteer: false,
         antiCrawler: false,
         supportBT: false,
         supportPodcast: false,
@@ -27,15 +26,11 @@ export const route: Route = {
 };
 
 async function getArticleContent(url: string): Promise<string | null> {
-    const { page, destroy } = await getPlaywrightPage(url, {
-        gotoConfig: {
-            waitUntil: 'networkidle',
-            timeout: 30000,
+    const html = await ofetch(url, {
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         },
     });
-
-    const html = await page.content();
-    await destroy();
 
     const $ = load(html);
 
@@ -64,12 +59,7 @@ async function getArticleContent(url: string): Promise<string | null> {
         }
     }
 
-    // 如果没找到，返回整个页面内容（排除导航等）
-    if (!content || content.length < 100) {
-        content = $('body').html() || '';
-    }
-
-    return content;
+    return content || null;
 }
 
 async function handler() {
