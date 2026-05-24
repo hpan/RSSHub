@@ -1,6 +1,7 @@
 import { load } from 'cheerio';
 import type { Route } from '@/types';
 import ofetch from '@/utils/ofetch';
+import { getPlaywrightPage } from '@/utils/playwright';
 
 export const route: Route = {
     path: '/news',
@@ -8,7 +9,7 @@ export const route: Route = {
     example: '/bjx/news',
     features: {
         requireConfig: false,
-        requirePuppeteer: false,
+        requirePuppeteer: true,
         antiCrawler: false,
         supportBT: false,
         supportPodcast: false,
@@ -25,12 +26,61 @@ export const route: Route = {
     ],
 };
 
-async function handler() {
-    let html: string;
-    
+async function getArticleContent(url: string): Promise<string | null> {
     try {
-        // 使用简单的HTTP请求获取页面内容
-        html = await ofetch('https://www.bjx.com.cn');
+        const { page, destroy } = await getPlaywrightPage(url, {
+            gotoConfig: {
+                waitUntil: 'networkidle',
+                timeout: 30000,
+            },
+        });
+
+        const html = await page.content();
+        await destroy();
+
+        const $ = load(html);
+
+        // 移除无关元素
+        $('script, style, nav, footer, header, aside, .advertisement, .ad, .sidebar, .comment, .share, .related').remove();
+
+        // 尝试多个选择器获取文章正文
+        const contentSelectors = [
+            '.article-content',
+            '.article-body',
+            '.content-body',
+            '#articleContent',
+            '.news-content',
+            'article',
+            '.main-content',
+        ];
+
+        let content = '';
+        for (const selector of contentSelectors) {
+            const element = $(selector);
+            if (element.length > 0) {
+                content = element.html() || '';
+                if (content.length > 100) {
+                    break;
+                }
+            }
+        }
+
+        // 如果没找到，返回整个页面内容（排除导航等）
+        if (!content || content.length < 100) {
+            content = $('body').html() || '';
+        }
+
+        return content;
+    } catch {
+        return null;
+    }
+}
+
+async function handler() {
+    let listHtml: string;
+
+    try {
+        listHtml = await ofetch('https://www.bjx.com.cn');
     } catch {
         return {
             title: '北极星电力网 - 新闻中心',
@@ -45,7 +95,7 @@ async function handler() {
         };
     }
 
-    const $ = load(html);
+    const $ = load(listHtml);
     const items: { title: string; link: string }[] = [];
 
     // 从首页新闻区域提取新闻链接
@@ -85,10 +135,21 @@ async function handler() {
         });
     });
 
-    // 返回新闻列表
+    // 获取每个文章的详细内容
+    const itemsWithContent = await Promise.all(
+        items.slice(0, 10).map(async (item) => {
+            const content = await getArticleContent(item.link);
+            return {
+                title: item.title,
+                link: item.link,
+                description: content || item.title,
+            };
+        })
+    );
+
     return {
         title: '北极星电力网 - 新闻中心',
         link: 'https://www.bjx.com.cn/',
-        item: items.slice(0, 20),
+        item: itemsWithContent,
     };
 }
