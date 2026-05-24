@@ -27,73 +27,53 @@ export const route: Route = {
 };
 
 async function getArticleContent(url: string): Promise<string | null> {
-    try {
-        const { page, destroy } = await getPlaywrightPage(url, {
-            gotoConfig: {
-                waitUntil: 'networkidle',
-                timeout: 30000,
-            },
-        });
+    const { page, destroy } = await getPlaywrightPage(url, {
+        gotoConfig: {
+            waitUntil: 'networkidle',
+            timeout: 30000,
+        },
+    });
 
-        const html = await page.content();
-        await destroy();
+    const html = await page.content();
+    await destroy();
 
-        const $ = load(html);
+    const $ = load(html);
 
-        // 移除无关元素
-        $('script, style, nav, footer, header, aside, .advertisement, .ad, .sidebar, .comment, .share, .related').remove();
+    // 移除无关元素
+    $('script, style, nav, footer, header, aside, .advertisement, .ad, .sidebar, .comment, .share, .related').remove();
 
-        // 尝试多个选择器获取文章正文
-        const contentSelectors = [
-            '.article-content',
-            '.article-body',
-            '.content-body',
-            '#articleContent',
-            '.news-content',
-            'article',
-            '.main-content',
-        ];
+    // 尝试多个选择器获取文章正文
+    const contentSelectors = [
+        '.article-content',
+        '.article-body',
+        '.content-body',
+        '#articleContent',
+        '.news-content',
+        'article',
+        '.main-content',
+    ];
 
-        let content = '';
-        for (const selector of contentSelectors) {
-            const element = $(selector);
-            if (element.length > 0) {
-                content = element.html() || '';
-                if (content.length > 100) {
-                    break;
-                }
+    let content = '';
+    for (const selector of contentSelectors) {
+        const element = $(selector);
+        if (element.length > 0) {
+            content = element.html() || '';
+            if (content.length > 100) {
+                break;
             }
         }
-
-        // 如果没找到，返回整个页面内容（排除导航等）
-        if (!content || content.length < 100) {
-            content = $('body').html() || '';
-        }
-
-        return content;
-    } catch {
-        return null;
     }
+
+    // 如果没找到，返回整个页面内容（排除导航等）
+    if (!content || content.length < 100) {
+        content = $('body').html() || '';
+    }
+
+    return content;
 }
 
 async function handler() {
-    let listHtml: string;
-
-    try {
-        listHtml = await ofetch('https://www.bjx.com.cn');
-    } catch {
-        return {
-            title: '北极星电力网 - 新闻中心',
-            link: 'https://www.bjx.com.cn/',
-            item: [
-                {
-                    title: '北极星电力网新闻',
-                    link: 'https://www.bjx.com.cn/',
-                    description: '无法访问北极星电力网，请在中国大陆地区访问或使用支持访问国内网站的服务器。',
-                },
-            ],
-        };
-    }
+    const listHtml = await ofetch('https://www.bjx.com.cn');
 
     const $ = load(listHtml);
     const items: { title: string; link: string }[] = [];
